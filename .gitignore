@@ -1,0 +1,84 @@
+*.DS_Store
+*.iml
+*.xml
+
+# for here
+dev/
+data/cityscapes/
+data/VOC2012/
+events/
+log/
+checkpoints/
+viewer*/
+train.log.*
+debug.py
+*.pth.tar
+*.npy
+
+# Data files and directories common in repo root
+logs/
+*.h5
+results/
+temp/
+tmp/
+test/
+storage/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+arun_log/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# VS Studio Code
+.vscode
+
+# PyCharm
+.idea/
+
+# Dropbox
+.dropbox.attr
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# dotenv
+.env
+
+# virtualenv
+.venv
+venv/
+ENV/
+
+# model_convert
+to_caffe/
+to_kestrel/
+*.tar
+to_kestrel.yaml
+*petreloss*.conf
