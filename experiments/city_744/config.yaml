@@ -1,8 +1,8 @@
 dataset: # Required.
-  type: cityscapes
+  type: cityscapes_semi_cp
   train:
-    data_root: ../../../../data/cityscapes
-    data_list: ../../../../data/splits/cityscapes/744/labeled.txt
+    data_root: ../../data/cityscapes
+    data_list: ../../data/splits/cityscapes/744/labeled.txt
     flip: True
     GaussianBlur: False
     rand_resize: [0.5, 2.0]
@@ -10,13 +10,24 @@ dataset: # Required.
     crop:
       type: rand
       size: [769, 769] # crop image with HxW size
+    acm:
+      number: 3
+      area_thresh: 0.005
+      area_thresh2: 0.01
+      no_pad: True
+      no_slim: True
   val:
-    data_root: ../../../../data/cityscapes
-    data_list: ../../../../data/splits/cityscapes/val.txt
+    data_root: ../../data/cityscapes
+    data_list: ../../data/splits/cityscapes/val.txt
     crop:
       type: center
       size: [769, 769] # crop image with HxW size
-  batch_size: 4
+  acp:
+    rand_resize: [0.1, 2.0]
+    prob: 0.5
+    momentum: 0.999
+    number: 3
+  batch_size: 2
   n_sup: 744
   noise_std: 0.1
   workers: 2
@@ -31,20 +42,34 @@ trainer: # Required.
   optimizer:
     type: SGD
     kwargs:
-      lr: 0.01  # 4GPUs
+      lr: 0.01
       momentum: 0.9
-      weight_decay: 0.0005
+      weight_decay: 0.0001
   lr_scheduler:
     mode: poly
     kwargs:
       power: 0.9
+  contrastive:
+    negative_high_entropy: True
+    low_rank: 3
+    high_rank: 20
+    current_class_threshold: 0.3
+    current_class_negative_threshold: 1
+    unsupervised_entropy_ignore: 80
+    low_entropy_threshold: 20
+    num_negatives: 50
+    num_queries: 256
+    temperature: 0.5
 
 saver:
-  auto_resume: True
   snapshot_dir: checkpoints
-  pretrain: ''
+  auto_resume: True
 
 criterion:
+  contra_weight: 0.1
+  cons:
+    sample: True
+    gamma: 2
   type: ohem
   kwargs:
     thresh: 0.7
@@ -67,6 +92,5 @@ net: # Required.
   decoder:
     type: u2pl.models.decoder.dec_deeplabv3_plus
     kwargs:
-      rep_head: False
       inner_planes: 256
       dilations: [12, 24, 36]

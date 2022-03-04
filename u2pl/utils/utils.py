@@ -8,8 +8,6 @@ import torch
 import torch.distributed as dist
 import torch.nn.functional as F
 from PIL import Image
-
-# from skimage.filters import gaussian
 from skimage.measure import label, regionprops
 
 
@@ -57,6 +55,130 @@ def label_onehot(inputs, num_segments):
     outputs[:, inputs == 255] = 0
 
     return outputs.permute(1, 0, 2, 3)
+
+
+def load_state(path, model, optimizer=None, key="state_dict"):
+    rank = dist.get_rank()
+
+    def map_func(storage, location):
+        return storage.cuda()
+
+    if os.path.isfile(path):
+        if rank == 0:
+            print("=> loading checkpoint '{}'".format(path))
+
+        checkpoint = torch.load(path, map_location=map_func)
+
+        # fix size mismatch error
+        ignore_keys = []
+        state_dict = checkpoint[key]
+
+        for k, v in state_dict.items():
+            if k in model.state_dict().keys():
+                v_dst = model.state_dict()[k]
+                if v.shape != v_dst.shape:
+                    ignore_keys.append(k)
+                    if rank == 0:
+                        print(
+                            "caution: size-mismatch key: {} size: {} -> {}".format(
+                                k, v.shape, v_dst.shape
+                            )
+                        )
+
+        for k in ignore_keys:
+            checkpoint.pop(k)
+
+        model.load_state_dict(state_dict, strict=False)
+
+        if rank == 0:
+            ckpt_keys = set(state_dict.keys())
+            own_keys = set(model.state_dict().keys())
+            missing_keys = own_keys - ckpt_keys
+            for k in missing_keys:
+                print("caution: missing keys from checkpoint {}: {}".format(path, k))
+
+        if optimizer is not None:
+            best_metric = checkpoint["best_miou"]
+            last_iter = checkpoint["epoch"]
+            optimizer.load_state_dict(checkpoint["optimizer_state"])
+            if rank == 0:
+                print(
+                    "=> also loaded optimizer from checkpoint '{}' (epoch {})".format(
+                        path, last_iter
+                    )
+                )
+            return best_metric, last_iter
+    else:
+        if rank == 0:
+            print("=> no checkpoint found at '{}'".format(path))
+
+
+def create_cityscapes_label_colormap():
+    """Creates a label colormap used in CityScapes segmentation benchmark.
+    Returns:
+        A colormap for visualizing segmentation results.
+    """
+    colormap = np.zeros((256, 3), dtype=np.uint8)
+    colormap[0] = [128, 64, 128]
+    colormap[1] = [244, 35, 232]
+    colormap[2] = [70, 70, 70]
+    colormap[3] = [102, 102, 156]
+    colormap[4] = [190, 153, 153]
+    colormap[5] = [153, 153, 153]
+    colormap[6] = [250, 170, 30]
+    colormap[7] = [220, 220, 0]
+    colormap[8] = [107, 142, 35]
+    colormap[9] = [152, 251, 152]
+    colormap[10] = [70, 130, 180]
+    colormap[11] = [220, 20, 60]
+    colormap[12] = [255, 0, 0]
+    colormap[13] = [0, 0, 142]
+    colormap[14] = [0, 0, 70]
+    colormap[15] = [0, 60, 100]
+    colormap[16] = [0, 80, 100]
+    colormap[17] = [0, 0, 230]
+    colormap[18] = [119, 11, 32]
+
+    return colormap
+
+
+def create_pascal_label_colormap():
+    """Creates a label colormap used in Pascal segmentation benchmark.
+    Returns:
+        A colormap for visualizing segmentation results.
+    """
+    colormap = 255 * np.ones((256, 3), dtype=np.uint8)
+    colormap[0] = [0, 0, 0]
+    colormap[1] = [128, 0, 0]
+    colormap[2] = [0, 128, 0]
+    colormap[3] = [128, 128, 0]
+    colormap[4] = [0, 0, 128]
+    colormap[5] = [128, 0, 128]
+    colormap[6] = [0, 128, 128]
+    colormap[7] = [128, 128, 128]
+    colormap[8] = [64, 0, 0]
+    colormap[9] = [192, 0, 0]
+    colormap[10] = [64, 128, 0]
+    colormap[11] = [192, 128, 0]
+    colormap[12] = [64, 0, 128]
+    colormap[13] = [192, 0, 128]
+    colormap[14] = [64, 128, 128]
+    colormap[15] = [192, 128, 128]
+    colormap[16] = [0, 64, 0]
+    colormap[17] = [128, 64, 0]
+    colormap[18] = [0, 192, 0]
+    colormap[19] = [128, 192, 0]
+    colormap[20] = [0, 64, 128]
+
+    return colormap
+
+
+def colorize(mask, colormap):
+    color_mask = np.zeros([mask.shape[0], mask.shape[1], 3])
+    for i in np.unique(mask):
+        color_mask[mask == i] = colormap[i]
+
+    return Image.fromarray(np.uint8(color_mask))
 
 
 def get_world_size():
@@ -273,7 +395,7 @@ def generate_cutmix(pred, cat, area_thresh, no_pad=False, no_slim=False):
 
 def sample_from_bank(cutmix_bank, conf, smooth=False):
     # cutmix_bank [num_classes, len(dataset)]
-    conf = (1 - conf).numpy()
+    conf = (1 - conf).cpu().numpy()
     if smooth:
         conf = conf ** (1 / 3)
     conf = np.exp(conf) / np.sum(np.exp(conf))
@@ -484,7 +606,9 @@ def init_log(name, level=logging.INFO):
         logger.addFilter(lambda record: rank == 0)
     else:
         rank = 0
-    format_str = "[%(asctime)s][%(levelname)8s] %(message)s"
+    format_str = (
+        "[%(asctime)s][%(filename)15s][line:%(lineno)4d][%(levelname)8s] %(message)s"
+    )
     formatter = logging.Formatter(format_str)
     ch.setFormatter(formatter)
     logger.addHandler(ch)
@@ -521,14 +645,6 @@ def accuracy(output, target, topk=(1,)):
         correct_k = correct[:k].view(-1).float().sum(0)
         res.append(correct_k.mul_(100.0 / batch_size))
     return res
-
-
-def colorize(mask, colormap):
-    color_mask = np.zeros([mask.shape[0], mask.shape[1], 3])
-    for i in np.unique(mask):
-        color_mask[mask == i] = colormap[i]
-
-    return Image.fromarray(np.uint8(color_mask))
 
 
 def check_mkdir(dir_name):
@@ -580,117 +696,14 @@ def intersectionAndUnion(output, target, K, ignore_index=255):
     return area_intersection, area_union, area_target
 
 
-def load_state(path, model, optimizer=None, key="state_dict"):
-    rank = dist.get_rank()
-
-    def map_func(storage, location):
-        return storage.cuda()
-
-    if os.path.isfile(path):
-        if rank == 0:
-            print("=> loading checkpoint '{}'".format(path))
-
-        checkpoint = torch.load(path, map_location=map_func)
-
-        # fix size mismatch error
-        ignore_keys = []
-        state_dict = checkpoint[key]
-
-        for k, v in state_dict.items():
-            if k in model.state_dict().keys():
-                v_dst = model.state_dict()[k]
-                if v.shape != v_dst.shape:
-                    ignore_keys.append(k)
-                    if rank == 0:
-                        print(
-                            "caution: size-mismatch key: {} size: {} -> {}".format(
-                                k, v.shape, v_dst.shape
-                            )
-                        )
-
-        for k in ignore_keys:
-            checkpoint.pop(k)
-
-        model.load_state_dict(state_dict, strict=False)
-
-        if rank == 0:
-            ckpt_keys = set(state_dict.keys())
-            own_keys = set(model.state_dict().keys())
-            missing_keys = own_keys - ckpt_keys
-            for k in missing_keys:
-                print("caution: missing keys from checkpoint {}: {}".format(path, k))
-
-        if optimizer is not None:
-            best_metric = checkpoint["best_miou"]
-            last_iter = checkpoint["epoch"]
-            optimizer.load_state_dict(checkpoint["optimizer_state"])
-            if rank == 0:
-                print(
-                    "=> also loaded optimizer from checkpoint '{}' (epoch {})".format(
-                        path, last_iter
-                    )
-                )
-            return best_metric, last_iter
-    else:
-        if rank == 0:
-            print("=> no checkpoint found at '{}'".format(path))
-
-
-def create_cityscapes_label_colormap():
-    """Creates a label colormap used in CityScapes segmentation benchmark.
-    Returns:
-        A colormap for visualizing segmentation results.
-    """
-    colormap = np.zeros((256, 3), dtype=np.uint8)
-    colormap[0] = [128, 64, 128]
-    colormap[1] = [244, 35, 232]
-    colormap[2] = [70, 70, 70]
-    colormap[3] = [102, 102, 156]
-    colormap[4] = [190, 153, 153]
-    colormap[5] = [153, 153, 153]
-    colormap[6] = [250, 170, 30]
-    colormap[7] = [220, 220, 0]
-    colormap[8] = [107, 142, 35]
-    colormap[9] = [152, 251, 152]
-    colormap[10] = [70, 130, 180]
-    colormap[11] = [220, 20, 60]
-    colormap[12] = [255, 0, 0]
-    colormap[13] = [0, 0, 142]
-    colormap[14] = [0, 0, 70]
-    colormap[15] = [0, 60, 100]
-    colormap[16] = [0, 80, 100]
-    colormap[17] = [0, 0, 230]
-    colormap[18] = [119, 11, 32]
-
-    return colormap
-
-
-def create_pascal_label_colormap():
-    """Creates a label colormap used in Pascal segmentation benchmark.
-    Returns:
-        A colormap for visualizing segmentation results.
-    """
-    colormap = 255 * np.ones((256, 3), dtype=np.uint8)
-    colormap[0] = [0, 0, 0]
-    colormap[1] = [128, 0, 0]
-    colormap[2] = [0, 128, 0]
-    colormap[3] = [128, 128, 0]
-    colormap[4] = [0, 0, 128]
-    colormap[5] = [128, 0, 128]
-    colormap[6] = [0, 128, 128]
-    colormap[7] = [128, 128, 128]
-    colormap[8] = [64, 0, 0]
-    colormap[9] = [192, 0, 0]
-    colormap[10] = [64, 128, 0]
-    colormap[11] = [192, 128, 0]
-    colormap[12] = [64, 0, 128]
-    colormap[13] = [192, 0, 128]
-    colormap[14] = [64, 128, 128]
-    colormap[15] = [192, 128, 128]
-    colormap[16] = [0, 64, 0]
-    colormap[17] = [128, 64, 0]
-    colormap[18] = [0, 192, 0]
-    colormap[19] = [128, 192, 0]
-    colormap[20] = [0, 64, 128]
-
-    return colormap
+def load_trained_model(model, loaded_dict):
+    net_state_dict = model.state_dict()
+    new_loaded_dict = {}
+    for k in net_state_dict:
+        if k in loaded_dict and net_state_dict[k].size() == loaded_dict[k].size():
+            new_loaded_dict[k] = loaded_dict[k]
+        else:
+            logging.info("Skipped loading parameter %s", k)
+    net_state_dict.update(new_loaded_dict)
+    model.load_state_dict(net_state_dict)
+    return model

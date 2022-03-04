@@ -50,12 +50,10 @@ class dec_deeplabv3_plus(nn.Module):
         inner_planes=256,
         sync_bn=False,
         dilations=(12, 24, 36),
-        rep_head=True,
     ):
         super(dec_deeplabv3_plus, self).__init__()
 
         norm_layer = get_syncbn() if sync_bn else nn.BatchNorm2d
-        self.rep_head = rep_head
 
         self.low_conv = nn.Sequential(
             nn.Conv2d(256, 256, kernel_size=1), norm_layer(256), nn.ReLU(inplace=True)
@@ -91,19 +89,17 @@ class dec_deeplabv3_plus(nn.Module):
             nn.Conv2d(256, num_classes, kernel_size=1, stride=1, padding=0, bias=True),
         )
 
-        if self.rep_head:
-
-            self.representation = nn.Sequential(
-                nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=1, bias=True),
-                norm_layer(256),
-                nn.ReLU(inplace=True),
-                nn.Dropout2d(0.1),
-                nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=True),
-                norm_layer(256),
-                nn.ReLU(inplace=True),
-                nn.Dropout2d(0.1),
-                nn.Conv2d(256, 256, kernel_size=1, stride=1, padding=0, bias=True),
-            )
+        self.representation = nn.Sequential(
+            nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=1, bias=True),
+            norm_layer(256),
+            nn.ReLU(inplace=True),
+            nn.Dropout2d(0.1),
+            nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=True),
+            norm_layer(256),
+            nn.ReLU(inplace=True),
+            nn.Dropout2d(0.1),
+            nn.Conv2d(256, 256, kernel_size=1, stride=1, padding=0, bias=True),
+        )
 
     def forward(self, x):
         x1, x2, x3, x4 = x
@@ -116,10 +112,10 @@ class dec_deeplabv3_plus(nn.Module):
         )
         aspp_out = torch.cat((low_feat, aspp_out), dim=1)
 
-        res = {"pred": self.classifier(aspp_out)}
-
-        if self.rep_head:
-            res["rep"] = self.representation(aspp_out)
+        res = {
+            "pred": self.classifier(aspp_out),
+            "rep": self.representation(aspp_out),
+        }
 
         return res
 

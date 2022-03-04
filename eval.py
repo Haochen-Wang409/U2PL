@@ -3,6 +3,7 @@ import os
 import time
 from argparse import ArgumentParser
 
+import cv2
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -54,6 +55,9 @@ def get_parser():
     )
     parser.add_argument(
         "--crop", action="store_true", default=False, help="whether use crop evaluation"
+    )
+    parser.add_argument(
+        "--save", action="store_true", help="whether to save the results"
     )
     return parser
 
@@ -115,43 +119,48 @@ def main():
 
     # Create network.
     args.use_auxloss = True if cfg["net"].get("aux_loss", False) else False
-    logger.info("=> creating model from '{}' ...".format(args.model_path))
 
     cfg["net"]["sync_bn"] = False
     model = ModelBuilder(cfg["net"])
-    checkpoint = torch.load(args.model_path)
-    key = "teacher_state" if "teacher_state" in checkpoint.keys() else "model_state"
-    logger.info(f"=> load checkpoint[{key}]")
+    for model_path in ["checkpoints/ckpt_best.pth", "checkpoints/ckpt.pth"]:
+        logger.info("=> creating model from '{}' ...".format(model_path))
 
-    saved_state_dict = convert_state_dict(checkpoint[key])
-    model.load_state_dict(saved_state_dict, strict=False)
-    model.cuda()
-    logger.info("Load Model Done!")
-    if "cityscapes" in cfg["dataset"]["type"]:
-        validate_city(
-            model,
-            num_classes,
-            data_list,
-            mean,
-            std,
-            args.base_size,
-            crop_h,
-            crop_w,
-            args.scales,
-            gray_folder,
-            color_folder,
-        )
-    else:
-        valiadte_whole(
-            model,
-            num_classes,
-            data_list,
-            mean,
-            std,
-            args.scales,
-            gray_folder,
-            color_folder,
-        )
+        for key in ["model_state", "teacher_state"]:
+            checkpoint = torch.load(model_path)
+            if not key in checkpoint.keys():
+                continue
+
+            logger.info(f"=> load checkpoint[{key}]")
+
+            saved_state_dict = convert_state_dict(checkpoint[key])
+            model.load_state_dict(saved_state_dict, strict=False)
+            model.cuda()
+            logger.info("Load Model Done!")
+            if "cityscapes" in cfg["dataset"]["type"]:
+                validate_city(
+                    model,
+                    num_classes,
+                    data_list,
+                    mean,
+                    std,
+                    args.base_size,
+                    crop_h,
+                    crop_w,
+                    args.scales,
+                    gray_folder,
+                    color_folder,
+                )
+            else:
+                valiadte_whole(
+                    model,
+                    num_classes,
+                    data_list,
+                    mean,
+                    std,
+                    args.scales,
+                    gray_folder,
+                    color_folder,
+                )
     # cal_acc(data_list, gray_folder, num_classes)
 
 
@@ -294,10 +303,14 @@ def validate_city(
         gray = np.uint8(prediction)
         color = colorize(gray, colormap)
 
-        image_path, _ = data_list[i]
-        image_name = image_path.split("/")[-1].split(".")[0]
-        color_path = os.path.join(color_folder, image_name + ".png")
-        color.save(color_path)
+        if args.save:
+            image_path, _ = data_list[i]
+            image_name = image_path.split("/")[-1].split(".")[0]
+            color_path = os.path.join(color_folder, image_name + ".png")
+            color.save(color_path)
+
+            gray_path = os.path.join(gray_folder, image_name + ".png")
+            cv2.imwrite(gray_path, gray)
 
         intersection, union, target = intersectionAndUnion(gray, label, classes)
         intersection_meter.update(intersection)

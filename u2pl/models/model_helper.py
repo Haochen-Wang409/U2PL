@@ -51,16 +51,15 @@ class ModelBuilder(nn.Module):
             if self.fpn:
                 # feat1 used as dsn loss as default, f1 is layer2's output as default
                 f1, f2, feat1, feat2 = self.encoder(x)
-                outs = self.decoder([f1, f2, feat1, feat2])
+                out_head = self.decoder([f1, f2, feat1, feat2])
             else:
                 feat1, feat2 = self.encoder(x)
-                outs = self.decoder(feat2)
+                out_head = self.decoder(feat2)
 
             pred_aux = self.auxor(feat1)
-
-            outs.update({"aux": pred_aux})
-            return outs
+            out_head.update({"aux": pred_aux})
+            return out_head
         else:
             feat = self.encoder(x)
-            outs = self.decoder(feat)
-            return outs
+            pred_head = self.decoder(feat)
+            return pred_head

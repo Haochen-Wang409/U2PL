@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.ndimage as nd
 import torch
+import torch.distributed as dist
 import torch.nn as nn
 from torch.nn import functional as F
 
@@ -27,27 +28,6 @@ def compute_rce_loss(predict, target):
     return rce.sum() / (target != 255).sum()
 
 
-def compute_unsupervised_loss(predict, target, percent, pred_teacher):
-    batch_size, num_class, h, w = predict.shape
-
-    with torch.no_grad():
-        # drop pixels with high entropy
-        prob = torch.softmax(pred_teacher, dim=1)
-        entropy = -torch.sum(prob * torch.log(prob + 1e-10), dim=1)
-
-        thresh = np.percentile(
-            entropy[target != 255].detach().cpu().numpy().flatten(), percent
-        )
-        thresh_mask = entropy.ge(thresh).bool() * (target != 255).bool()
-
-        target[thresh_mask] = 255
-        weight = batch_size * h * w / torch.sum(target != 255)
-
-    loss = weight * F.cross_entropy(predict, target, ignore_index=255)  # [10, 321, 321]
-
-    return loss
-
-
 def compute_contra_memobank_loss(
     rep,
     label_l,
@@ -63,9 +43,10 @@ def compute_contra_memobank_loss(
     rep_teacher,
     momentum_prototype=None,
     i_iter=0,
+    conf_weight=False,
 ):
     # current_class_threshold: delta_p (0.3)
-    # current_class_negative_threshold: delta_n (1)
+    # current_class_negative_threshold: delta_n (1.0)
     current_class_threshold = cfg["current_class_threshold"]
     current_class_negative_threshold = cfg["current_class_negative_threshold"]
     low_rank, high_rank = cfg["low_rank"], cfg["high_rank"]
@@ -88,13 +69,15 @@ def compute_contra_memobank_loss(
     seg_num_list = []  # the number of low_valid pixels in each class
     seg_proto_list = []  # the center of each class
 
-    _, prob_indices_l = torch.sort(prob_l, 1, True)
+    prob_l_sort, prob_indices_l = torch.sort(prob_l, 1, True)
     prob_indices_l = prob_indices_l.permute(0, 2, 3, 1)  # (num_labeled, h, w, num_cls)
+    conf_l = prob_l_sort[:, 0, :, :]
 
-    _, prob_indices_u = torch.sort(prob_u, 1, True)
+    prob_u_sort, prob_indices_u = torch.sort(prob_u, 1, True)
     prob_indices_u = prob_indices_u.permute(
         0, 2, 3, 1
     )  # (num_unlabeled, h, w, num_cls)
+    conf_u = prob_u_sort[:, 0, :, :]
 
     prob = torch.cat((prob_l, prob_u), dim=0)  # (batch_size, num_cls, h, w)
 
@@ -116,11 +99,23 @@ def compute_contra_memobank_loss(
         seg_feat_low_entropy_list.append(rep[rep_mask_low_entropy])
 
         # positive sample: center of the class
-        seg_proto_list.append(
-            torch.mean(
-                rep_teacher[low_valid_pixel_seg.bool()].detach(), dim=0, keepdim=True
+        if conf_weight:
+            weight = torch.cat((conf_l, conf_u)).unsqueeze(dim=3)
+            rep_weighted = rep_teacher.detach() * weight
+            valid_weighted = torch.sum(
+                rep_weighted[low_valid_pixel_seg.bool()], dim=0, keepdim=True
             )
-        )
+            seg_proto_list.append(
+                valid_weighted / torch.sum(weight[low_valid_pixel_seg.bool()])
+            )
+        else:
+            seg_proto_list.append(
+                torch.mean(
+                    rep_teacher[low_valid_pixel_seg.bool()].detach(),
+                    dim=0,
+                    keepdim=True,
+                )
+            )
 
         # generate class mask for unlabeled data
         # prob_i_classes = prob_indices_u[rep_mask_high_entropy[num_labeled :]]
@@ -235,7 +230,7 @@ def compute_contra_memobank_loss(
             return prototype, new_keys, reco_loss / valid_seg
 
 
-def get_criterion(cfg):
+def get_criterion(cfg, cons=False):
     cfg_criterion = cfg["criterion"]
     aux_weight = (
         cfg["net"]["aux_loss"]["loss_weight"]
@@ -251,12 +246,29 @@ def get_criterion(cfg):
         criterion = Criterion(
             aux_weight, ignore_index=ignore_index, **cfg_criterion["kwargs"]
         )
-
+    if cons:
+        gamma = cfg["criterion"]["cons"]["gamma"]
+        sample = cfg["criterion"]["cons"].get("sample", False)
+        gamma2 = cfg["criterion"]["cons"].get("gamma2", 1)
+        criterion = Criterion_cons(
+            gamma,
+            sample=sample,
+            gamma2=gamma2,
+            ignore_index=ignore_index,
+            **cfg_criterion["kwargs"],
+        )
     return criterion
 
 
 class Criterion(nn.Module):
-    def __init__(self, aux_weight, ignore_index=255, use_weight=False):
+    def __init__(
+        self,
+        aux_weight,
+        ignore_index=255,
+        thresh=0.7,
+        min_kept=100000,
+        use_weight=False,
+    ):
         super(Criterion, self).__init__()
         self._aux_weight = aux_weight
         self._ignore_index = ignore_index
@@ -318,6 +330,53 @@ class Criterion(nn.Module):
             assert pred_h == h and pred_w == w
             loss = self._criterion(preds, target)
         return loss
+
+
+class Criterion_cons(nn.Module):
+    def __init__(
+        self,
+        gamma,
+        sample=False,
+        gamma2=1,
+        ignore_index=255,
+        thresh=0.7,
+        min_kept=100000,
+        use_weight=False,
+    ):
+        super(Criterion_cons, self).__init__()
+        self.gamma = gamma
+        self.gamma2 = float(gamma2)
+        self._ignore_index = ignore_index
+        self.sample = sample
+        self._criterion = nn.CrossEntropyLoss(
+            ignore_index=ignore_index, reduction="none"
+        )
+
+    def forward(self, preds, conf, gt, dcp_criterion=None):
+
+        # conf = F.softmax(conf)
+        ce_loss = self._criterion(preds, gt)
+        conf = torch.pow(conf, self.gamma)
+
+        if self.sample:
+            dcp_criterion = 1 - dcp_criterion
+            dcp_criterion = dcp_criterion / (torch.max(dcp_criterion) + 1e-12)
+            dcp_criterion = torch.pow(dcp_criterion, self.gamma2)
+            pred_map = preds.max(1)[1].float()
+
+            sample_map = torch.zeros_like(pred_map).float()
+            h, w = pred_map.shape[-2], pred_map.shape[-1]
+
+            for idx in range(len(dcp_criterion)):
+                prob = 1 - dcp_criterion[idx]
+                rand_map = torch.rand(h, w).cuda() * (pred_map == idx)
+                rand_map = (rand_map > prob) * 1.0
+                sample_map += rand_map
+            conf = conf * (sample_map)
+        conf = conf / (conf.sum() + 1e-12)
+
+        loss = conf * ce_loss
+        return loss.sum()
 
 
 class CriterionOhem(nn.Module):
@@ -461,32 +520,35 @@ class OhemCrossEntropy2dTensor(nn.Module):
         self.thresh = float(thresh)
         self.min_kept = int(min_kept)
         if use_weight:
+            # weight = torch.FloatTensor(
+            #     [0.8373, 0.918, 0.866, 1.0345, 1.0166, 0.9969, 0.9754, 1.0489,
+            #      0.8786, 1.0023, 0.9539, 0.9843, 1.1116, 0.9037, 1.0865, 1.0955,
+            #      1.0865, 1.1529, 1.0507]).cuda()
             weight = torch.FloatTensor(
                 [
-                    0.8373,
-                    0.918,
-                    0.866,
-                    1.0345,
-                    1.0166,
-                    0.9969,
-                    0.9754,
-                    1.0489,
-                    0.8786,
-                    1.0023,
-                    0.9539,
-                    0.9843,
-                    1.1116,
-                    0.9037,
-                    1.0865,
-                    1.0955,
-                    1.0865,
-                    1.1529,
-                    1.0507,
+                    0.4762,
+                    0.5,
+                    0.4762,
+                    1.4286,
+                    1.1111,
+                    0.4762,
+                    0.8333,
+                    0.5,
+                    0.5,
+                    0.8333,
+                    0.5263,
+                    0.5882,
+                    1.4286,
+                    0.5,
+                    3.3333,
+                    5.0,
+                    10.0,
+                    2.5,
+                    0.8333,
                 ]
             ).cuda()
-            # weight = torch.FloatTensor(
-            #    [0.4762, 0.5, 0.4762, 1.4286, 1.1111, 0.4762, 0.8333, 0.5, 0.5, 0.8333, 0.5263, 0.5882,
-            #    1.4286, 0.5, 3.3333,5.0, 10.0, 2.5, 0.8333]).cuda()
+            print(f"OHEM weight {weight.cpu().numpy()}")
+
             self.criterion = torch.nn.CrossEntropyLoss(
                 reduction="mean", weight=weight, ignore_index=ignore_index
             )

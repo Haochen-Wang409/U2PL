@@ -1,5 +1,4 @@
 import copy
-import math
 import os
 import os.path
 import random
@@ -15,29 +14,24 @@ from .base import BaseDataset
 
 
 class voc_dset(BaseDataset):
-    def __init__(
-        self, data_root, data_list, trs_form, seed=0, n_sup=10582, split="val"
-    ):
+    def __init__(self, data_root, data_list, trs_form, seed=0, n_sup=10582):
         super(voc_dset, self).__init__(data_list)
         self.data_root = data_root
         self.transform = trs_form
         random.seed(seed)
-        if len(self.list_sample) >= n_sup and split == "train":
-            self.list_sample_new = random.sample(self.list_sample, n_sup)
-        elif len(self.list_sample) < n_sup and split == "train":
-            num_repeat = math.ceil(n_sup / len(self.list_sample))
-            self.list_sample = self.list_sample * num_repeat
-
+        if len(self.list_sample) >= n_sup:
             self.list_sample_new = random.sample(self.list_sample, n_sup)
         else:
             self.list_sample_new = self.list_sample
 
     def __getitem__(self, index):
-        # load image and its label
+        # load VOC image and its label
         image_path = os.path.join(self.data_root, self.list_sample_new[index][0])
         label_path = os.path.join(self.data_root, self.list_sample_new[index][1])
+
         image = self.img_loader(image_path, "RGB")
-        label = self.img_loader(label_path, "L")
+        label = self.img_loader(label_path, "P")
+
         image, label = self.transform(image, label)
         return image[0], label[0, 0].long()
 
@@ -73,6 +67,7 @@ def build_transfrom(cfg):
 
 def build_vocloader(split, all_cfg, seed=0):
     cfg_dset = all_cfg["dataset"]
+    cfg_trainer = all_cfg["trainer"]
 
     cfg = copy.deepcopy(cfg_dset)
     cfg.update(cfg.get(split, {}))
@@ -96,62 +91,3 @@ def build_vocloader(split, all_cfg, seed=0):
         pin_memory=False,
     )
     return loader
-
-
-def build_voc_semi_loader(split, all_cfg, seed=0):
-    cfg_dset = all_cfg["dataset"]
-
-    cfg = copy.deepcopy(cfg_dset)
-    cfg.update(cfg.get(split, {}))
-
-    workers = cfg.get("workers", 2)
-    batch_size = cfg.get("batch_size", 1)
-    n_sup = 10582 - cfg.get("n_sup", 10582)
-
-    # build transform
-    trs_form = build_transfrom(cfg)
-    trs_form_unsup = build_transfrom(cfg)
-    dset = voc_dset(cfg["data_root"], cfg["data_list"], trs_form, seed, n_sup, split)
-
-    if split == "val":
-        # build sampler
-        sample = DistributedSampler(dset)
-        loader = DataLoader(
-            dset,
-            batch_size=batch_size,
-            num_workers=workers,
-            sampler=sample,
-            shuffle=False,
-            pin_memory=True,
-        )
-        return loader
-
-    else:
-        # build sampler for unlabeled set
-        data_list_unsup = cfg["data_list"].replace("labeled.txt", "unlabeled.txt")
-        dset_unsup = voc_dset(
-            cfg["data_root"], data_list_unsup, trs_form_unsup, seed, n_sup, split
-        )
-
-        sample_sup = DistributedSampler(dset)
-        loader_sup = DataLoader(
-            dset,
-            batch_size=batch_size,
-            num_workers=workers,
-            sampler=sample_sup,
-            shuffle=False,
-            pin_memory=True,
-            drop_last=True,
-        )
-
-        sample_unsup = DistributedSampler(dset_unsup)
-        loader_unsup = DataLoader(
-            dset_unsup,
-            batch_size=batch_size,
-            num_workers=workers,
-            sampler=sample_unsup,
-            shuffle=False,
-            pin_memory=True,
-            drop_last=True,
-        )
-        return loader_sup, loader_unsup
