@@ -152,11 +152,11 @@
     <tr>
       <td align=center width=150px>
         <center><span style="font-size:20px"><a href="" target="_blank">
-              Yuchao Wang</a></span></center>
+              Yuchao Wang*</a></span></center>
       </td>
       <td align=center width=150px>
-        <center><span style="font-size:20px"><a href="https://github.com/Haochen-Wang409/" target="_blank">Haochen
-              Wang</a></span></center>
+        <center><span style="font-size:20px"><a href="https://github.com/Haochen-Wang409/" target="_blank">
+          Haochen Wang*</a></span></center>
       </td>
       <td align=center width=150px>
         <center><span style="font-size:20px"><a href="https://shenyujun.github.io/" target="_blank">Yujun
@@ -229,42 +229,43 @@
 
   <br>
 
-  In many real-world scenarios, rewards extrinsic to the agent are extremely sparse, or absent altogether. In such
-  cases, curiosity can serve as an intrinsic reward signal to enable the agent to explore its environment and learn
-  skills that might be useful later in its life. We formulate curiosity as the error in an agent's ability to predict
-  the consequence of its own actions in a visual feature space learned by a self-supervised inverse dynamics model. Our
-  formulation scales to high-dimensional continuous state spaces like images, bypasses the difficulties of directly
-  predicting pixels, and, critically, ignores the aspects of the environment that cannot affect the agent. The proposed
-  approach is evaluated in two environments: <i>VizDoom</i> and <i>Super Mario Bros</i>. Three broad settings are
-  investigated: 1) sparse extrinsic reward, where curiosity allows for far fewer interactions with the environment to
-  reach the goal; 2) exploration with no extrinsic reward, where curiosity pushes the agent to explore more efficiently;
-  and 3) generalization to unseen scenarios (e.g. new levels of the same game) where the knowledge gained from earlier
-  experience helps the agent explore new places much faster than starting from scratch.
+  The crux of semi-supervised semantic segmentation is to assign adequate pseudo-labels to the pixels of
+  unlabeled images. A common practice is to select the highly confident predictions as the pseudo ground-truth,
+  but it leads to a problem that most pixels may be left unused due to their unreliability. We argue that
+  every pixel matters to the model training, even its prediction is ambiguous. Intuitively, an unreliable
+  prediction may get confused among the top classes (<i>i.e.</i>, those with the highest probabilities),
+  however, it should be confident about the pixel not belonging to the remaining classes. Hence, such a pixel
+  can be convincingly treated as a negative sample to those most unlikely categories. Based on this insight,
+  we develop an effective pipeline to make sufficient use of unlabeled data. Concretely, we separate reliable
+  and unreliable pixels via the entropy of predictions, push each unreliable pixel to a category-wise queue
+  that consists of negative samples, and manage to train the model with all candidate pixels. Considering the
+  training evolution, where the prediction becomes more and more accurate, we adaptively adjust the threshold
+  for the reliable-unreliable partition. Experimental results on various benchmarks and training settings
+  demonstrate the superiority of our approach over the state-of-the-art alternatives.
 
-  <br>
-  <br>
-  <hr>
+<!--  <br>-->
+<!--  <br>-->
+<!--  <hr>-->
 
-  <center id="demoVideo">
-    <h1>Demo Video</h1>
-  </center>
-  <table align=center width=600px>
-    <tr>
-      <td align=center width=600px>
-        <iframe width="800" height="450" src="" frameborder="0" allowfullscreen></iframe>
-      </td>
-    </tr>
-  </table>
+<!--  <center id="demoVideo">-->
+<!--    <h1>Demo Video</h1>-->
+<!--  </center>-->
+<!--  <table align=center width=600px>-->
+<!--    <tr>-->
+<!--      <td align=center width=600px>-->
+<!--        <iframe width="800" height="450" src="" frameborder="0" allowfullscreen></iframe>-->
+<!--      </td>-->
+<!--    </tr>-->
+<!--  </table>-->
 
-  <br>
-  <hr>
+<!--  <br>-->
+<!--  <hr>-->
 
   <center id="sourceCode">
     <h1>Source Code</h1>
   </center>
-  <center>We have released the TensorFlow based implementation for on the github page. It builds upon OpenAI Gym with
-    factorized RL environment wrappers which are generally useful. Try our code!</center>
-  <table align=center width=900px>
+  <center>We have released the PyTorch based implementation for on the github page. Try our code!</center>
+  <table align=center width=800px>
     <tr>
       <!-- <p style="margin-top:4px;"></p> -->
       <td width=300px align=center>
@@ -277,47 +278,53 @@
   <hr>
   <br>
 
-  <table align=center width=850px>
-    <center>
-      <h1>Paper</h1>
-    </center>
+  <center id="Paper">
+    <h1>Paper</h1>
+  </center>
+  <table align=center width=800px>
     <tr>
-      <td width=400px align=left>
+      <td width=800px align=center>
         <!-- <p style="margin-top:4px;"></p> -->
-        <a href="resources/icml17.pdf"><img style="height:200px" src="resources/icml17_thumbnail.png" /></a>
+        <a href="resources/U2PL_CVPR_2022.pdf"><img style="height:400px" src="resources/U2PL_paper.png" /></a>
         <center>
-          <span style="font-size:20pt"><a href="resources/icml17.pdf">[Paper 2MB]</a>&nbsp;
-            <span style="font-size:20pt"><a href="https://arxiv.org/abs/1705.05363">[arXiv]</a>
+          <span style="font-size:20pt"><a href="resources/U2PL_CVPR_2022.pdf">[Paper 5.5MB]</a>&nbsp;
+            <span style="font-size:20pt"><a href="https://arxiv.org/abs/2203.03884">[arXiv]</a>
         </center>
       </td>
-      <td width=50px align=center>
-      </td>
-      <td width=450px align=left>
+    </tr>
+  </table>
+
+  <br>
+  <hr>
+  <br>
+
+  <center id="Citation">
+    <h1>Citation</h1>
+  </center>
+  <table align=center width=800px>
+    <tr>
+      <td width=800px align=left>
         <!-- <p style="margin-top:4px;"></p> -->
         <p style="text-align:left;"><b><span style="font-size:20pt">Citation</span></b><br /><span
             style="font-size:6px;">&nbsp;<br /></span> <span style="font-size:15pt">Semi-Supervised Semantic
-            Segmentation <br>Using Unreliable
-            Pseudo-Labels.<br /></b> In <i>CVPR 2022</i>.</span></p>
+            Segmentation Using Unreliable
+            Pseudo-Labels.</b> In <i>CVPR</i> 2022.</span></p>
         <!-- <p style="margin-top:20px;"></p> -->
         <span style="font-size:20pt"><a shape="rect" href="javascript:togglebib('icml17_bib')"
             class="togglebib">[Bibtex]</a></span>
       </td>
     </tr>
     <tr>
-      <td width=350px align=left>
-      </td>
-      <td width=100px align=center>
-      </td>
-      <td width=450px align=left>
+      <td width=800px align=left>
         <div class="paper" id="icml17_bib">
           <pre xml:space="preserve">@inproceedings{wang2022semi,
-  title={Semi-Supervised Semantic Segmentation 
-    Using Unreliable Pseudo Labels},
-  author={Wang*, Haochen and Wang*, Yuchao and 
-    Shen, Yujun and Fei, Jingjing 
+  title={Semi-Supervised Semantic Segmentation Using Unreliable Pseudo Labels},
+  author={Wang, Yuchao and Wang, Haochen
+    and Shen, Yujun and Fei, Jingjing
     and Li, Wei and Jin, Guoqiang
     and Wu, Liwei and Zhao, Rui and Le, Xinyi},
-  booktitle={CVPR},
+  booktitle={Proceedings of the IEEE/CVF International Conference on
+    Computer Vision and Patern Recognition (CVPR)},
   year={2022}
 }</pre>
         </div>
@@ -325,7 +332,11 @@
     </tr>
   </table>
 
-  <br><br>
+
+  <br>
+  <hr>
+  <br>
+
   <script xml:space="preserve" language="JavaScript">
     hideallbibs();
   </script>
