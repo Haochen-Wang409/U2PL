@@ -1,6 +1,6 @@
 # Using Unreliable Pseudo Labels
 
-Official PyTorch implementation of [Semi-Supervised Semantic Segmentation Using Unreliable Pseudo Labels](aeXiv), CVPR 2022.
+Official PyTorch implementation of [Semi-Supervised Semantic Segmentation Using Unreliable Pseudo Labels](https://arxiv.org/abs/2203.03884), CVPR 2022.
 
 Please refer to our **[project page](https://haochen-wang409.github.io/U2PL/)** for qualitative results.
 
