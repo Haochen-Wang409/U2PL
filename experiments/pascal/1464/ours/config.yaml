@@ -58,7 +58,9 @@ saver:
   pretrain: ''
 
 criterion:
-  use_weight: False
+  type: CELoss
+  kwargs:
+    use_weight: False
 
 net: # Required.
   num_classes: 21
