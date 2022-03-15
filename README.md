@@ -102,6 +102,8 @@ data/cityscapes
 
 Download "VOCtrainval_11-May-2012.tar" from: http://host.robots.ox.ac.uk/pascal/VOC/voc2012/VOCtrainval_11-May-2012.tar.
 
+Download ```SBD``` dataset from: http://home.bharathh.info/pubs/codes/SBD/download.html
+
 And unzip the files to folder ```data``` and make the dictionary structures as follows:
 
 ```angular2html
