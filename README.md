@@ -100,9 +100,7 @@ data/cityscapes
 <details>
   <summary>For PASCAL VOC 2012</summary>
 
-Download "VOCtrainval_11-May-2012.tar" from: http://host.robots.ox.ac.uk/pascal/VOC/voc2012/VOCtrainval_11-May-2012.tar.
-
-Download ```SBD``` dataset from: http://home.bharathh.info/pubs/codes/SBD/download.html
+Refer to [this link](https://github.com/zhixuanli/segmentation-paper-reading-notes/blob/master/others/Summary%20of%20the%20semantic%20segmentation%20datasets.md) and download ```PASCAL VOC 2012 augmented with SBD``` dataset.
 
 And unzip the files to folder ```data``` and make the dictionary structures as follows:
 
