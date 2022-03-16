@@ -34,6 +34,10 @@ and remaining ```9,850 (9,118 + 732)``` are unlabeled.
 
 Labeled images are selected from the ```train``` set of augmented VOC, ```10,582``` images in total.
 
+Following results are all trained under our own splits.
+Training a model on different splits is recommended to measure the performance of a method.
+You can train our U<sup>2</sup>PL on splits provided by [CPS](https://github.com/charlesCXK/TorchSemiSeg/tree/main/DATA/pascal_voc/subset_train_aug) or [ST++](https://github.com/LiheYoung/ST-PlusPlus/tree/master/dataset/splits/pascal).
+
 | Method                      | 1/16 (662) | 1/8 (1323) | 1/4 (2646) | 1/2 (5291) |
 | --------------------------- | ---------- | ---------- | ---------- | ---------- |
 | SupOnly                     | 67.87      | 71.55      | 75.80      | 77.13      |
