@@ -219,8 +219,9 @@ sh eval.sh
 ```<num_gpu>``` means the number of GPUs for training.
 
 To reproduce our results, we recommend you follow the settings:
-- Cityscapes: 4 for SupOnly and 8 for Semi-Supervised
-- PASCAL VOC 2012: 2 for SupOnly and 4 for Semi-Supervised
+- Cityscapes: ```4 * V100 (32G)``` for SupOnly and ```8 * V100 (32G)``` for Semi-Supervised
+- PASCAL VOC 2012: ```2 * V100 (32G)``` for SupOnly and ```4 * V100 (32G)``` for Semi-Supervised
+If you got ```CUDA Out of Memory``` error, please try training our method in [fp16](https://github.com/NVIDIA/apex) mode.
 
 Or, change the ```lr``` in ```config.yaml``` in a linear manner (*e.g.*, if you want to train a SupOnly model on Cityscapes with 8 GPUs, 
 you are recommended to change the ```lr``` to ```0.02```).
