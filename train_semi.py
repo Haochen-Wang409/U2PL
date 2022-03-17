@@ -373,14 +373,17 @@ def train(
                 )
 
             # unsupervised loss
+            drop_percent = cfg["trainer"]["unsupervised"].get("drop_percent", 100)
+            percent_unreliable = (100 - drop_percent) * (1 - epoch / cfg["trainer"]["epochs"])
+            drop_percent = 100 - percent_unreliable
             unsup_loss = (
-                compute_unsupervised_loss(
-                    pred_u_large,
-                    label_u_aug.clone(),
-                    cfg["trainer"]["unsupervised"].get("drop_percent", 100),
-                    pred_u_large_teacher.detach(),
-                )
-                * cfg["trainer"]["unsupervised"].get("loss_weight", 1)
+                    compute_unsupervised_loss(
+                        pred_u_large,
+                        label_u_aug.clone(),
+                        drop_percent,
+                        pred_u_large_teacher.detach(),
+                    )
+                    * cfg["trainer"]["unsupervised"].get("loss_weight", 1)
             )
 
             # contrastive loss using unreliable pseudo labels
