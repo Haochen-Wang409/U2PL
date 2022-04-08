@@ -150,7 +150,7 @@ def main():
             )
 
     elif cfg["saver"].get("pretrain", False):
-        laod_state(cfg["saver"]["pretrain"], model, key="model_state")
+        load_state(cfg["saver"]["pretrain"], model, key="model_state")
         load_state(cfg["saver"]["pretrain"], model_teacher, key="teacher_state")
 
     lr_scheduler = get_scheduler(
