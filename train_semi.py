@@ -153,8 +153,9 @@ def main():
         load_state(cfg["saver"]["pretrain"], model, key="model_state")
         load_state(cfg["saver"]["pretrain"], model_teacher, key="teacher_state")
 
+    optimizer_start = get_optimizer(params_list, cfg_optim)
     lr_scheduler = get_scheduler(
-        cfg_trainer, len(train_loader_sup), optimizer, start_epoch=last_epoch
+        cfg_trainer, len(train_loader_sup), optimizer_start, start_epoch=last_epoch
     )
 
     # build class-wise memory bank
