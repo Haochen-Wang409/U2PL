@@ -97,6 +97,7 @@ def main():
     # Optimizer and lr decay scheduler
     cfg_trainer = cfg["trainer"]
     cfg_optim = cfg_trainer["optimizer"]
+    times = 10 if "pascal" in cfg["dataset"]["type"] else 1
 
     params_list = []
     for module in modules_back:
@@ -105,7 +106,7 @@ def main():
         )
     for module in modules_head:
         params_list.append(
-            dict(params=module.parameters(), lr=cfg_optim["kwargs"]["lr"] * 10)
+            dict(params=module.parameters(), lr=cfg_optim["kwargs"]["lr"] * times)
         )
 
     optimizer = get_optimizer(params_list, cfg_optim)
