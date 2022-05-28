@@ -4,6 +4,12 @@ Official PyTorch implementation of [Semi-Supervised Semantic Segmentation Using 
 
 Please refer to our **[project page](https://haochen-wang409.github.io/U2PL/)** for qualitative results.
 
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/semi-supervised-semantic-segmentation-using-2/semi-supervised-semantic-segmentation-on-21)](https://paperswithcode.com/sota/semi-supervised-semantic-segmentation-on-21?p=semi-supervised-semantic-segmentation-using-2)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/semi-supervised-semantic-segmentation-using-2/semi-supervised-semantic-segmentation-on-4)](https://paperswithcode.com/sota/semi-supervised-semantic-segmentation-on-4?p=semi-supervised-semantic-segmentation-using-2)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/semi-supervised-semantic-segmentation-using-2/semi-supervised-semantic-segmentation-on-9)](https://paperswithcode.com/sota/semi-supervised-semantic-segmentation-on-9?p=semi-supervised-semantic-segmentation-using-2)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/semi-supervised-semantic-segmentation-using-2/semi-supervised-semantic-segmentation-on-15)](https://paperswithcode.com/sota/semi-supervised-semantic-segmentation-on-15?p=semi-supervised-semantic-segmentation-using-2)
+
+
 > **Abstract.** 
 > The crux of semi-supervised semantic segmentation is to assign adequate pseudo-labels to the pixels of unlabeled images. 
 > A common practice is to select the highly confident predictions as the pseudo ground-truth, but it leads to a problem that most pixels may be left unused due to their unreliability. 
