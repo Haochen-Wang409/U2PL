@@ -77,7 +77,7 @@ def main():
     else:
         modules_head = [model.decoder]
 
-    if cfg.get("sync_bn", True):
+    if cfg["net"].get("sync_bn", True):
         model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
     model.cuda()
