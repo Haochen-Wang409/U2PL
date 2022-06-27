@@ -42,6 +42,7 @@ from u2pl.utils.utils import (
 
 parser = argparse.ArgumentParser(description="Semi-Supervised Semantic Segmentation")
 parser.add_argument("--config", type=str, default="config.yaml")
+parser.add_argument("--local_rank", type=int, default=0)
 parser.add_argument("--port", type=int, default=10682)
 parser.add_argument("--seed", type=int, default=0)
 logger = init_log("global", logging.INFO)
