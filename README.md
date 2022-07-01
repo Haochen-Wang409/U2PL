@@ -266,6 +266,6 @@ Thanks a lot for their great work!
 ## Contact
 
 - Yuchao Wang, 44442222@sjtu.edu.cn
-- Haochen Wang, wanghaochen0409@sjtu.edu.cn
+- Haochen Wang, wanghaochen2022@ia.ac.cn
 - Jingjing Fei, feijingjing1@sensetime.com
 - Wei Li, liwei1@sensetime.com
