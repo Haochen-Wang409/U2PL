@@ -88,7 +88,9 @@ U<sup>2</sup>PL is evaluated on both Cityscapes and PASCAL VOC 2012 dataset.
 <details>
   <summary>For Cityscapes</summary>
 
-Download "leftImg8bit_trainvaltest.zip" and "gtFine_trainvaltest.zip" from: https://www.cityscapes-dataset.com/downloads/.
+Download "leftImg8bit_trainvaltest.zip" from: https://www.cityscapes-dataset.com/downloads/
+
+Download "gtFine.zip" from: https://drive.google.com/file/d/10tdElaTscdhojER_Lf7XlytiyAkk7Wlg/view?usp=sharing
 
 Next, unzip the files to folder ```data``` and make the dictionary structures as follows:
 
