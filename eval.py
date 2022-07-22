@@ -350,7 +350,7 @@ def valiadte_whole(
         check_makedirs(gray_folder)
         check_makedirs(color_folder)
         gray = np.uint8(prediction)
-        color = colorize(gray)
+        color = colorize(gray,colormap)
         image_path, _ = data_list[i]
         image_name = image_path.split("/")[-1].split(".")[0]
         gray_path = os.path.join(gray_folder, image_name + ".png")
