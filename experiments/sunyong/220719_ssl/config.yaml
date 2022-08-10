@@ -1,8 +1,8 @@
 dataset: # Required.
   type: pascal_semi
   train:
-    data_root: /mnt/prj/users/ssy/dataset/pascal
-    data_list: ../../../../data/splits/pascal/1464/labeled.txt
+    data_root: /mnt/prj/users/ssy/dataset/lululab/darkcircle/220810_ssl
+    data_list: ../../../data/splits/sunyong/labeled.txt
     flip: True
     GaussianBlur: False
     rand_resize: [0.5, 2.0]
@@ -11,8 +11,8 @@ dataset: # Required.
       type: rand
       size: [513, 513] # crop image with HxW size
   val:
-    data_root: /mnt/prj/users/ssy/dataset/pascal
-    data_list: ../../../../data/splits/pascal/val.txt
+    data_root: /mnt/prj/users/ssy/dataset/lululab/darkcircle/220810_ssl
+    data_list: ../../../data/splits/sunyong/val.txt
     crop:
       type: center
       size: [513, 513] # crop image with HxW size

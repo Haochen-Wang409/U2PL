@@ -17,7 +17,7 @@ model_urls = {
     "resnet18": "/path/to/resnet18.pth",
     "resnet34": "/path/to/resnet34.pth",
     "resnet50": "/path/to/resnet50.pth",
-    "resnet101": "/path/to/resnet101.pth",
+    "resnet101": "/mnt/prj/users/ssy/project/U2PL/pretrained/resnet101.pth",
     "resnet152": "/path/to/resnet152.pth",
 }
 
@@ -365,18 +365,18 @@ def resnet101(pretrained=True, **kwargs):
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
     model = ResNet(Bottleneck, [3, 4, 23, 3], **kwargs)
-    # if pretrained:
-    #     model_url = model_urls["resnet101"]
-    #     state_dict = torch.load(model_url)
-    #
-    #     missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
-    #     print(
-    #         f"[Info] Load ImageNet pretrain from '{model_url}'",
-    #         "\nmissing_keys: ",
-    #         missing_keys,
-    #         "\nunexpected_keys: ",
-    #         unexpected_keys,
-    #     )
+    if pretrained:
+        model_url = model_urls["resnet101"]
+        state_dict = torch.load(model_url)
+
+        missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
+        print(
+            f"[Info] Load ImageNet pretrain from '{model_url}'",
+            "\nmissing_keys: ",
+            missing_keys,
+            "\nunexpected_keys: ",
+            unexpected_keys,
+        )
     return model
 
 

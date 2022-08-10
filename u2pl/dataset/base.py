@@ -29,7 +29,13 @@ class BaseDataset(Dataset):
                 for line in open(d_list, "r")
             ]
         else:
-            raise "unknown dataset!"
+            self.list_sample = [
+                [
+                    'input/' + line.strip(),
+                    'label/' + line.strip(),
+                ]
+                for line in open(d_list, "r")
+            ]
 
         if max_sample > 0:
             self.list_sample = self.list_sample[0:max_sample]
@@ -39,6 +45,9 @@ class BaseDataset(Dataset):
         self.num_sample = len(self.list_sample)
         assert self.num_sample > 0
         logger.info("# samples: {}".format(self.num_sample))
+
+        # import pdb
+        # pdb.set_trace()
 
     def img_loader(self, path, mode):
         with open(path, "rb") as f:
