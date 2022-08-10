@@ -1,7 +1,7 @@
 dataset: # Required.
   type: pascal_semi
   train:
-    data_root: ../../../../data/VOC2012
+    data_root: /mnt/prj/users/ssy/dataset/pascal
     data_list: ../../../../data/splits/pascal/1464/labeled.txt
     flip: True
     GaussianBlur: False
@@ -11,7 +11,7 @@ dataset: # Required.
       type: rand
       size: [513, 513] # crop image with HxW size
   val:
-    data_root: ../../../../data/VOC2012
+    data_root: /mnt/prj/users/ssy/dataset/pascal
     data_list: ../../../../data/splits/pascal/val.txt
     crop:
       type: center
