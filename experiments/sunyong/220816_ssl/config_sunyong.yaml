@@ -1,0 +1,80 @@
+dataset: # Required.
+  type: pascal_semi
+  train:
+    data_root: /mnt/prj/users/ssy/dataset/lululab/darkcircle/220816_ssl
+    data_list: ../../../data/splits/sunyong/220816_ssl/labeled.txt
+    flip: True
+    GaussianBlur: False
+    rand_resize: [0.5, 2.0]
+    #rand_rotation: [-10.0, 10.0]
+    crop:
+      type: rand
+      size: [513, 513] # crop image with HxW size
+  val:
+    data_root: /mnt/prj/users/ssy/dataset/lululab/darkcircle/220816_ssl
+    data_list: ../../../data/splits/sunyong/220816_ssl/val.txt
+    crop:
+      type: center
+      size: [513, 513] # crop image with HxW size
+  batch_size: 4
+  n_sup: 1464
+  noise_std: 0.1
+  workers: 2
+  mean: [123.675, 116.28, 103.53]
+  std: [58.395, 57.12, 57.375]
+  ignore_label: 255
+
+trainer: # Required.
+  epochs: 100
+  eval_on: True
+  optimizer:
+    type: SGD
+    kwargs:
+      lr: 0.001  # 4GPUs
+      momentum: 0.9
+      weight_decay: 0.0001
+  lr_scheduler:
+    mode: poly
+    kwargs:
+      power: 0.9
+  unsupervised:
+    TTA: False
+    drop_percent: 80
+    apply_aug: cutmix
+  contrastive:
+    negative_high_entropy: True
+    low_rank: 3
+    high_rank: 20
+    current_class_threshold: 0.3
+    current_class_negative_threshold: 1
+    unsupervised_entropy_ignore: 80
+    low_entropy_threshold: 20
+    num_negatives: 50
+    num_queries: 256
+    temperature: 0.5
+
+saver:
+  snapshot_dir: checkpoints
+  pretrain: ''
+
+criterion:
+  type: CELoss
+  kwargs:
+    use_weight: False
+
+net: # Required.
+  num_classes: 2
+  sync_bn: True
+  ema_decay: 0.99
+  encoder:
+    type: u2pl.models.swin.Swin_encoder
+    kwargs:
+      multi_grid: True
+      zero_init_residual: True
+      fpn: True
+      replace_stride_with_dilation: [False, True, True]  #layer0...1 is fixed, layer2...4
+  decoder:
+    type: u2pl.models.swin.Swin_decoder
+    kwargs:
+      inner_planes: 256
+      dilations: [12, 24, 36]
