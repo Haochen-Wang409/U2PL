@@ -82,4 +82,7 @@ to_kestrel/
 *.tar
 to_kestrel.yaml
 *petreloss*.conf
-pretrained/
+
+**/core.*
+*.pth
+*.pt

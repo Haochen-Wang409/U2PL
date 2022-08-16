@@ -39,7 +39,7 @@ class voc_dset(BaseDataset):
         image = self.img_loader(image_path, "RGB")
         label = self.img_loader(label_path, "L")
         image, label = self.transform(image, label)
-        return image[0], label[0, 0].long()
+        return image[0], (label[0, 0] / 255).long()     # divide 255 in sunyong dataset
 
     def __len__(self):
         return len(self.list_sample_new)

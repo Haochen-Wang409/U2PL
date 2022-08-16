@@ -127,20 +127,22 @@ class ModelBuilder_Sunyong(nn.Module):
         return cls(**kwargs)
 
     def forward(self, x):
+        x_size = x.shape[2:]
         if self._use_auxloss:
             if self.fpn:
-                # feat1 used as dsn loss as default, f1 is layer2's output as default
-                f1, f2, feat1, feat2 = self.encoder(x)
-                outs = self.decoder([f1, f2, feat1, feat2])
+                feat = self.encoder(x)  # list of feature pyramid
+                feat_out = self.decoder(feat)
+                outs = swin.Upsample(feat_out, x_size)
             else:
                 feat1, feat2 = self.encoder(x)
                 outs = self.decoder(feat2)
 
-            pred_aux = self.auxor(feat1)
+            pred_aux = self.auxor(feat[2])
 
             outs.update({"aux": pred_aux})
             return outs
         else:
-            feat = self.encoder(x)
-            outs = self.decoder(feat)
+            feat = self.encoder(x)  # list of feature pyramid
+            feat_out = self.decoder(feat)
+            outs = swin.Upsample(feat_out, x_size)
             return outs
