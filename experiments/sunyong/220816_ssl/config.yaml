@@ -16,7 +16,7 @@ dataset: # Required.
     crop:
       type: center
       size: [513, 513] # crop image with HxW size
-  batch_size: 2
+  batch_size: 4
   n_sup: 1464
   noise_std: 0.1
   workers: 2
@@ -63,7 +63,7 @@ criterion:
     use_weight: False
 
 net: # Required.
-  num_classes: 21
+  num_classes: 2
   sync_bn: True
   ema_decay: 0.99
   encoder:
