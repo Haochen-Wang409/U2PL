@@ -1061,38 +1061,178 @@ class M_UPerHead_no_seg(BaseDecodeHead):
 
 
 class Swin(nn.Module):
-    def __init__(self, num_classes=2, in_channel=3):
+    def __init__(
+            self,
+            in_planes,
+            num_classes=19,
+            inner_planes=256,
+            sync_bn=False,
+            dilations=(12, 24, 36),
+    ):
         super(Swin, self).__init__()
 
-        self.swin_transformer = SwinTransformer(in_chans=in_channel,
-                                                embed_dim=96,
-                                                depths=[2, 2, 6, 2],
-                                                num_heads=[3, 6, 12, 24],
-                                                window_size=7,
-                                                mlp_ratio=4.,
-                                                qkv_bias=True,
-                                                qk_scale=None,
-                                                drop_rate=0.,
-                                                attn_drop_rate=0.,
-                                                drop_path_rate=0.3,
-                                                ape=False,
-                                                patch_norm=True,
-                                                out_indices=(0, 1, 2, 3),
-                                                use_checkpoint=False)
+        norm_layer = nn.SyncBatchNorm if self._sync_bn else nn.BatchNorm2d
 
-        self.uper_head = M_UPerHead(in_channels=[96, 192, 384, 768],
-                                    in_index=[0, 1, 2, 3],
-                                    pool_scales=(1, 2, 3, 6),
-                                    channels=512,
-                                    dropout_ratio=0.1,
-                                    num_classes=num_classes,
-                                    align_corners=False,)
+        self.encoder = SwinTransformer(in_chans=3,
+                                       embed_dim=96,
+                                       depths=[2, 2, 6, 2],
+                                       num_heads=[3, 6, 12, 24],
+                                       window_size=7,
+                                       mlp_ratio=4.,
+                                       qkv_bias=True,
+                                       qk_scale=None,
+                                       drop_rate=0.,
+                                       attn_drop_rate=0.,
+                                       drop_path_rate=0.3,
+                                       ape=False,
+                                       patch_norm=True,
+                                       out_indices=(0, 1, 2, 3),
+                                       use_checkpoint=False)
+        self.decoder = M_UPerHead_no_seg(in_channels=[96, 192, 384, 768],
+                                         in_index=[0, 1, 2, 3],
+                                         pool_scales=(1, 2, 3, 6),
+                                         channels=512,
+                                         dropout_ratio=0.1,
+                                         num_classes=num_classes,
+                                         align_corners=False,)
+
+        self.classifier = nn.Sequential(
+            nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=1, bias=True),
+            norm_layer(256),
+            nn.ReLU(inplace=True),
+            nn.Dropout2d(0.1),
+            nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=True),
+            norm_layer(256),
+            nn.ReLU(inplace=True),
+            nn.Dropout2d(0.1),
+            nn.Conv2d(256, num_classes, kernel_size=1, stride=1, padding=0, bias=True),
+        )
+
+        self.representation = nn.Sequential(
+            nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=1, bias=True),
+            norm_layer(256),
+            nn.ReLU(inplace=True),
+            nn.Dropout2d(0.1),
+            nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=True),
+            norm_layer(256),
+            nn.ReLU(inplace=True),
+            nn.Dropout2d(0.1),
+            nn.Conv2d(256, 256, kernel_size=1, stride=1, padding=0, bias=True),
+        )
 
     def forward(self, x):
         x_size = x.shape[2:]
 
-        feat = self.swin_transformer(x)     # list of feature pyramid
-        feat = self.uper_head(feat)
-        feat = Upsample(feat, x_size)
+        feat = self.encoder(x)  # list of feature pyramid
+        feat_out = self.decoder(feat)
+        feat_out = Upsample(feat_out, x_size)
+        res = {"pred": self.classifier(feat_out), "rep": self.representation(feat_out)}
+
+        return res
+
+
+class Swin_encoder(nn.Module):
+    def __init__(
+            self,
+            zero_init_residual=False,
+            groups=1,
+            width_per_group=64,
+            replace_stride_with_dilation=[False, False, False],
+            sync_bn=False,
+            multi_grid=False,
+            fpn=False,
+    ):
+        super(Swin_encoder, self).__init__()
+
+        norm_layer = nn.SyncBatchNorm if sync_bn else nn.BatchNorm2d
+
+        self.encoder = SwinTransformer(in_chans=3,
+                                       embed_dim=96,
+                                       depths=[2, 2, 6, 2],
+                                       num_heads=[3, 6, 12, 24],
+                                       window_size=7,
+                                       mlp_ratio=4.,
+                                       qkv_bias=True,
+                                       qk_scale=None,
+                                       drop_rate=0.,
+                                       attn_drop_rate=0.,
+                                       drop_path_rate=0.3,
+                                       ape=False,
+                                       patch_norm=True,
+                                       out_indices=(0, 1, 2, 3),
+                                       use_checkpoint=False,
+                                       )
+
+    def get_outplanes(self):
+        return 128  # self.inplanes == 128 in resnet101
+
+    def forward(self, x):
+        feat = self.encoder(x)  # list of feature pyramid
 
         return feat
+
+
+class Swin_decoder(nn.Module):
+    def __init__(
+            self,
+            in_planes,
+            num_classes=19,
+            inner_planes=256,
+            sync_bn=False,
+            dilations=(12, 24, 36),
+    ):
+        super(Swin_decoder, self).__init__()
+
+        # norm_layer = nn.SyncBatchNorm if sync_bn else nn.BatchNorm2d
+        norm_layer = nn.BatchNorm2d
+
+        self.low_conv = nn.Sequential(
+            nn.Conv2d(96, 256, kernel_size=1),
+            norm_layer(256),
+            nn.ReLU(inplace=True)
+        )
+
+        self.decoder = M_UPerHead_no_seg(in_channels=[96, 192, 384, 768],
+                                         in_index=[0, 1, 2, 3],
+                                         pool_scales=(1, 2, 3, 6),
+                                         channels=512,
+                                         dropout_ratio=0.1,
+                                         num_classes=num_classes,
+                                         align_corners=False,)
+
+        self.classifier = nn.Sequential(
+            nn.Conv2d(768, 256, kernel_size=3, stride=1, padding=1, bias=True),
+            norm_layer(256),
+            nn.ReLU(inplace=True),
+            nn.Dropout2d(0.1),
+            nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=True),
+            norm_layer(256),
+            nn.ReLU(inplace=True),
+            nn.Dropout2d(0.1),
+            nn.Conv2d(256, num_classes, kernel_size=1, stride=1, padding=0, bias=True),
+        )
+
+        self.representation = nn.Sequential(
+            nn.Conv2d(768, 256, kernel_size=3, stride=1, padding=1, bias=True),
+            norm_layer(256),
+            nn.ReLU(inplace=True),
+            nn.Dropout2d(0.1),
+            nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=True),
+            norm_layer(256),
+            nn.ReLU(inplace=True),
+            nn.Dropout2d(0.1),
+            nn.Conv2d(256, 256, kernel_size=1, stride=1, padding=0, bias=True),
+        )
+
+    def forward(self, x):
+        x1, x2, x3, x4 = x
+
+        low_feat = self.low_conv(x1)
+        feat_out = self.decoder(x)
+        h, w = low_feat.size()[-2:]
+        feat_out = F.interpolate(feat_out, size=(h, w), mode="bilinear", align_corners=True)
+        feat_out = torch.cat((low_feat, feat_out), dim=1)
+
+        res = {"pred": self.classifier(feat_out), "rep": self.representation(feat_out)}
+
+        return res

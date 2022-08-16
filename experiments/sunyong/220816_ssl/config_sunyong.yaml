@@ -16,7 +16,7 @@ dataset: # Required.
     crop:
       type: center
       size: [513, 513] # crop image with HxW size
-  batch_size: 2
+  batch_size: 4
   n_sup: 1464
   noise_std: 0.1
   workers: 2
@@ -67,14 +67,14 @@ net: # Required.
   sync_bn: True
   ema_decay: 0.99
   encoder:
-    type: u2pl.models.resnet.resnet101
+    type: u2pl.models.swin.Swin_encoder
     kwargs:
       multi_grid: True
       zero_init_residual: True
       fpn: True
       replace_stride_with_dilation: [False, True, True]  #layer0...1 is fixed, layer2...4
   decoder:
-    type: u2pl.models.decoder.dec_deeplabv3_plus
+    type: u2pl.models.swin.Swin_decoder
     kwargs:
       inner_planes: 256
       dilations: [12, 24, 36]
