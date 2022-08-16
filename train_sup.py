@@ -165,6 +165,7 @@ def main():
                 )
 
             torch.save(state, osp.join(cfg["saver"]["snapshot_dir"], "ckpt.pth"))
+            print(osp.join(cfg["saver"]["snapshot_dir"], "ckpt.pth") + '\t model saved!!!')
 
             logger.info(
                 "\033[31m * Currently, the best val result is: {:.2f}\033[0m".format(

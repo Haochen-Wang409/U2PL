@@ -29,7 +29,13 @@ class BaseDataset(Dataset):
                 for line in open(d_list, "r")
             ]
         else:
-            raise "unknown dataset!"
+            self.list_sample = [
+                [
+                    'input/' + line.strip(),
+                    'label/' + line.strip(),
+                ]
+                for line in open(d_list, "r", encoding='utf-8')
+            ]
 
         if max_sample > 0:
             self.list_sample = self.list_sample[0:max_sample]

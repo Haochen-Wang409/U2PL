@@ -3,6 +3,7 @@ import torch.nn as nn
 from torch.nn import functional as F
 
 from .base import ASPP, get_syncbn
+from u2pl.models import swin
 
 
 class dec_deeplabv3(nn.Module):

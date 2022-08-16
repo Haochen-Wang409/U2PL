@@ -116,7 +116,7 @@ def main():
         model,
         device_ids=[local_rank],
         output_device=local_rank,
-        find_unused_parameters=False,
+        find_unused_parameters=True,
     )
 
     # Teacher model
@@ -126,7 +126,7 @@ def main():
         model_teacher,
         device_ids=[local_rank],
         output_device=local_rank,
-        find_unused_parameters=False,
+        find_unused_parameters=True,
     )
 
     for p in model_teacher.parameters():
