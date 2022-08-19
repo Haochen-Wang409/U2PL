@@ -617,7 +617,6 @@ class SwinTransformer(nn.Module):
         self._freeze_stages()
 
 
-
 def Upsample(x, size):
     """
     Wrapper Around the Upsample Call

@@ -1,9 +1,7 @@
 import importlib
 
 import torch.nn as nn
-from torch.nn import functional as F
 from .decoder import Aux_Module
-from u2pl.models import swin
 
 
 class ModelBuilder(nn.Module):

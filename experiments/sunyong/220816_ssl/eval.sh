@@ -1,7 +1,7 @@
 #!/bin/bash
 now=$(date +"%Y%m%d_%H%M%S")
 job='eval'
-ROOT=../../../..
+ROOT=../../..
 
 mkdir -p log
 mkdir -p checkpoints/results

@@ -1,8 +1,8 @@
 dataset: # Required.
   type: pascal_semi
   train:
-    data_root: /mnt/prj/users/ssy/dataset/lululab/darkcircle/220816_ssl
-    data_list: ../../../data/splits/sunyong/220816_ssl/labeled.txt
+    data_root: /mnt/prj/users/ssy/dataset/lululab/flush/220817_ssl  # /mnt/prj/users/ssy/dataset/lululab/darkcircle/220816_ssl, /mnt/prj/users/ssy/dataset/lululab/flush/220817_ssl
+    data_list: /mnt/prj/users/ssy/dataset/lululab/flush/220817_ssl/labeled.txt
     flip: True
     GaussianBlur: False
     rand_resize: [0.5, 2.0]
@@ -11,26 +11,26 @@ dataset: # Required.
       type: rand
       size: [513, 513] # crop image with HxW size
   val:
-    data_root: /mnt/prj/users/ssy/dataset/lululab/darkcircle/220816_ssl
-    data_list: ../../../data/splits/sunyong/220816_ssl/val.txt
+    data_root: /mnt/prj/users/ssy/dataset/lululab/flush/220817_ssl
+    data_list: /mnt/prj/users/ssy/dataset/lululab/flush/220817_ssl/val.txt
     crop:
       type: center
       size: [513, 513] # crop image with HxW size
-  batch_size: 2
-  n_sup: 1464
+  batch_size: 8
+  n_sup: 1090   # *** please check the number of train dataset!!! DARKCIRCLE: 1090, FLUSH: 3313 *** #
   noise_std: 0.1
   workers: 2
   mean: [123.675, 116.28, 103.53]
   std: [58.395, 57.12, 57.375]
   ignore_label: 255
 
-trainer: # Required.
+trainer:
   epochs: 100
   eval_on: True
   optimizer:
     type: SGD
     kwargs:
-      lr: 0.001  # 4GPUs
+      lr: 0.001
       momentum: 0.9
       weight_decay: 0.0001
   lr_scheduler:
@@ -62,7 +62,7 @@ criterion:
   kwargs:
     use_weight: False
 
-net: # Required.
+net:
   num_classes: 2
   sync_bn: True
   ema_decay: 0.99
@@ -72,7 +72,7 @@ net: # Required.
       multi_grid: True
       zero_init_residual: True
       fpn: True
-      replace_stride_with_dilation: [False, True, True]  #layer0...1 is fixed, layer2...4
+      replace_stride_with_dilation: [False, True, True]
   decoder:
     type: u2pl.models.swin.Swin_decoder
     kwargs:
