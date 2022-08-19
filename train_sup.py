@@ -46,7 +46,7 @@ def main():
     cfg = yaml.load(open(args.config, "r"), Loader=yaml.Loader)
 
     cfg["exp_path"] = os.path.dirname(args.config)
-    cfg["save_path"] = os.path.join(cfg["exp_path"], cfg["saver"]["snapshot_dir"])
+    cfg["save_path"] = os.path.join(cfg["exp_path"], os.path.join(cfg["saver"]["snapshot_dir"], cfg['dataset']['type']))
 
     cudnn.enabled = True
     cudnn.benchmark = True
@@ -66,8 +66,8 @@ def main():
         print("set random seed to", args.seed)
         set_random_seed(args.seed)
 
-    if not osp.exists(cfg["saver"]["snapshot_dir"]) and rank == 0:
-        os.makedirs(cfg["saver"]["snapshot_dir"])
+    if not osp.exists(os.path.join(cfg["saver"]["snapshot_dir"], cfg['dataset']['type'])) and rank == 0:
+        os.makedirs(os.path.join(cfg["saver"]["snapshot_dir"], cfg['dataset']['type']))
 
     # Create network.
     model = ModelBuilder(cfg["net"])
@@ -87,7 +87,7 @@ def main():
         model,
         device_ids=[local_rank],
         output_device=local_rank,
-        find_unused_parameters=False,
+        find_unused_parameters=True,
     )
 
     criterion = get_criterion(cfg)
@@ -126,7 +126,7 @@ def main():
             )
 
     elif cfg["saver"].get("pretrain", False):
-        laod_state(cfg["saver"]["pretrain"], model, keys="model_state")
+        load_state(cfg["saver"]["pretrain"], model, keys="model_state")
 
     optimizer_old = get_optimizer(params_list, cfg_optim)
     lr_scheduler = get_scheduler(
@@ -161,11 +161,11 @@ def main():
                 best_prec = prec
                 state["best_miou"] = prec
                 torch.save(
-                    state, osp.join(cfg["saver"]["snapshot_dir"], "ckpt_best.pth")
+                    state, osp.join(os.path.join(cfg["saver"]["snapshot_dir"], cfg['dataset']['type']), "ckpt_best.pth")
                 )
 
-            torch.save(state, osp.join(cfg["saver"]["snapshot_dir"], "ckpt.pth"))
-            print(osp.join(cfg["saver"]["snapshot_dir"], "ckpt.pth") + '\t model saved!!!')
+            torch.save(state, osp.join(os.path.join(cfg["saver"]["snapshot_dir"], cfg['dataset']['type']), "ckpt.pth"))
+            print(osp.join(os.path.join(cfg["saver"]["snapshot_dir"], cfg['dataset']['type']), "ckpt.pth") + '\t model saved!!!')
 
             logger.info(
                 "\033[31m * Currently, the best val result is: {:.2f}\033[0m".format(

@@ -10,7 +10,7 @@ python $ROOT/eval.py \
     --config=config.yaml \
     --base_size 2048 \
     --scales 1.0 \
-    --model_path=checkpoints/ckpt.pth \
+    --model_path=checkpoints/pascal_semi/ckpt_best.pth \
     --save_folder=checkpoints/results \
     2>&1 | tee log/val_last_$now.txt
 
@@ -18,6 +18,6 @@ python $ROOT/eval.py \
     --config=config.yaml \
     --base_size 2048 \
     --scales 1.0 \
-    --model_path=checkpoints/ckpt_best.pth \
+    --model_path=checkpoints/pascal_semi/ckpt_best.pth \
     --save_folder=checkpoints/results \
     2>&1 | tee log/val_best_$now.txt

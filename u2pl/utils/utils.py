@@ -672,7 +672,7 @@ def create_pascal_label_colormap():
     """
     colormap = 255 * np.ones((256, 3), dtype=np.uint8)
     colormap[0] = [0, 0, 0]
-    colormap[1] = [128, 0, 0]
+    colormap[1] = [255, 255, 255]
     colormap[2] = [0, 128, 0]
     colormap[3] = [128, 128, 0]
     colormap[4] = [0, 0, 128]

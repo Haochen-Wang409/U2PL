@@ -107,8 +107,8 @@ def main():
         colormap = create_pascal_label_colormap()
         for line in open(f_data_list, "r"):
             arr = [
-                "JPEGImages/{}.jpg".format(line.strip()),
-                "SegmentationClassAug/{}.png".format(line.strip()),
+                'input/' + line.strip(),
+                'label/' + line.strip(),
             ]
             arr = [os.path.join(data_root, item) for item in arr]
             data_list.append(arr)

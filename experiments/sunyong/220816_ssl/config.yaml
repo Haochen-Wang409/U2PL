@@ -1,8 +1,8 @@
 dataset: # Required.
-  type: pascal_semi
+  type: pascal_semi   # pascal, pascal_semi
   train:
-    data_root: /mnt/prj/users/ssy/dataset/lululab/flush/220817_ssl  # /mnt/prj/users/ssy/dataset/lululab/darkcircle/220816_ssl, /mnt/prj/users/ssy/dataset/lululab/flush/220817_ssl
-    data_list: /mnt/prj/users/ssy/dataset/lululab/flush/220817_ssl/labeled.txt
+    data_root: /mnt/prj/users/ssy/dataset/lululab/darkcircle/220816_ssl  # /mnt/prj/users/ssy/dataset/lululab/darkcircle/220816_ssl, /mnt/prj/users/ssy/dataset/lululab/flush/220817_ssl
+    data_list: /mnt/prj/users/ssy/dataset/lululab/darkcircle/220816_ssl/labeled.txt
     flip: True
     GaussianBlur: False
     rand_resize: [0.5, 2.0]
@@ -11,12 +11,12 @@ dataset: # Required.
       type: rand
       size: [513, 513] # crop image with HxW size
   val:
-    data_root: /mnt/prj/users/ssy/dataset/lululab/flush/220817_ssl
-    data_list: /mnt/prj/users/ssy/dataset/lululab/flush/220817_ssl/val.txt
+    data_root: /mnt/prj/users/ssy/dataset/lululab/darkcircle/220816_ssl
+    data_list: /mnt/prj/users/ssy/dataset/lululab/darkcircle/220816_ssl/val.txt
     crop:
       type: center
       size: [513, 513] # crop image with HxW size
-  batch_size: 8
+  batch_size: 4
   n_sup: 1090   # *** please check the number of train dataset!!! DARKCIRCLE: 1090, FLUSH: 3313 *** #
   noise_std: 0.1
   workers: 2
@@ -67,14 +67,14 @@ net:
   sync_bn: True
   ema_decay: 0.99
   encoder:
-    type: u2pl.models.swin.Swin_encoder
+    type: u2pl.models.resnet.resnet101   # u2pl.models.resnet.resnet101, u2pl.models.swin.Swin_encoder
     kwargs:
       multi_grid: True
       zero_init_residual: True
       fpn: True
       replace_stride_with_dilation: [False, True, True]
   decoder:
-    type: u2pl.models.swin.Swin_decoder
+    type: u2pl.models.decoder.dec_deeplabv3_plus  # u2pl.models.decoder.dec_deeplabv3_plus, u2pl.models.swin.Swin_decoder
     kwargs:
       inner_planes: 256
       dilations: [12, 24, 36]
