@@ -54,7 +54,7 @@ def main():
     logger.propagate = 0
 
     cfg["exp_path"] = os.path.dirname(args.config)
-    cfg["save_path"] = os.path.join(cfg["exp_path"], os.path.join(cfg["saver"]["snapshot_dir"], cfg['dataset']['type']))
+    cfg["save_path"] = os.path.join(cfg["exp_path"], os.path.join(cfg["saver"]["snapshot_dir"], datetime.now().strftime("%Y-%m-%d %H%M%S")))
 
     cudnn.enabled = True
     cudnn.benchmark = True
@@ -74,8 +74,8 @@ def main():
         print("set random seed to", args.seed)
         set_random_seed(args.seed)
 
-    if not osp.exists(os.path.join(cfg["saver"]["snapshot_dir"], cfg['dataset']['type'])) and rank == 0:
-        os.makedirs(os.path.join(cfg["saver"]["snapshot_dir"], cfg['dataset']['type']))
+    if not osp.exists(os.path.join(cfg["saver"]["snapshot_dir"], datetime.now().strftime("%Y-%m-%d %H%M%S"))) and rank == 0:
+        os.makedirs(os.path.join(cfg["saver"]["snapshot_dir"], datetime.now().strftime("%Y-%m-%d %H%M%S")))
 
     # Create network
     model = ModelBuilder(cfg["net"])
@@ -218,10 +218,10 @@ def main():
                 if prec > best_prec:
                     best_prec = prec
                     torch.save(
-                        state, osp.join(os.path.join(cfg["saver"]["snapshot_dir"], cfg['dataset']['type']), "ckpt_best.pth")
+                        state, osp.join(os.path.join(cfg["saver"]["snapshot_dir"], datetime.now().strftime("%Y-%m-%d %H%M%S")), "ckpt_best.pth")
                     )
 
-                torch.save(state, osp.join(os.path.join(cfg["saver"]["snapshot_dir"], cfg['dataset']['type']), "ckpt.pth"))
+                torch.save(state, osp.join(os.path.join(cfg["saver"]["snapshot_dir"], datetime.now().strftime("%Y-%m-%d %H%M%S")), "ckpt.pth"))
 
                 logger.info(
                     "\033[31m * Currently, the best val result is: {:.2f}\033[0m".format(

@@ -17,7 +17,7 @@ dataset: # Required.
       type: center
       size: [513, 513] # crop image with HxW size
   batch_size: 4
-  n_sup: 1090   # *** please check the number of train dataset!!! DARKCIRCLE: 1090, FLUSH: 3313 *** #
+  n_sup: 1464   # *** please check the number of train dataset!!! DARKCIRCLE: 1090, FLUSH: 3313 *** #
   noise_std: 0.1
   workers: 2
   mean: [123.675, 116.28, 103.53]
