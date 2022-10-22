@@ -61,6 +61,8 @@ Labeled images are selected from the ```train``` set, ```2,975``` images in tota
 
 ## Checkpoints
 
+- Models on PASCAL VOC 2012 (ResNet101-DeepLabv3+) can be found [here](https://drive.google.com/drive/folders/1_BcixhrEqJEMo3lzKTKPJ_7gCWEjUBWp).
+
 - Models on Cityscapes with AEL (ResNet101-DeepLabv3+)
 
 | 1/16 (186)                                                                                         | 1/8 (372)                                                                                          | 1/4 (744)                                                                                          | 1/2 (1488)                                                                                         |
