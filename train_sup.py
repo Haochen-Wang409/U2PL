@@ -126,7 +126,7 @@ def main():
             )
 
     elif cfg["saver"].get("pretrain", False):
-        laod_state(cfg["saver"]["pretrain"], model, keys="model_state")
+        load_state(cfg["saver"]["pretrain"], model, keys="model_state")
 
     optimizer_old = get_optimizer(params_list, cfg_optim)
     lr_scheduler = get_scheduler(
